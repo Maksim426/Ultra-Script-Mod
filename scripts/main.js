@@ -49,7 +49,8 @@
     
     Object.defineProperty(scope, 'kill', { get: function() { Groups.unit.each(function(u) { if (u.team != Vars.player.team()) u.kill(); }); return "Враги уничтожены"; }, configurable: true });
     
-    Object.defineProperty(scope, 'Fill', { get: function() { 
+    // Исправлено: теперь команда пишется с маленькой буквы
+    Object.defineProperty(scope, 'fill', { get: function() { 
         var unit = Vars.player.unit();
         if(unit && unit.core()) {
             Vars.content.items().each(function(i) { unit.core().items.set(i, unit.core().storageCapacity); });
@@ -58,7 +59,7 @@
         return "Нет ядра"; 
     }, configurable: true });
 
-    Object.defineProperty(scope, 'dump', { get: function() { var c = Vars.player.unit() ? Vars.player.unit().core() : null; if(c) { c.items.clear(); return "Ядро очищено"; } return ">>> Нет ядра"; }, configurable: true });
+    Object.defineProperty(scope, 'dump', { get: function() { var c = Vars.player.unit() ? Vars.player.unit().core() : null; if(c) { c.items.clear(); return "Ядро очищено"; } return "Нет ядра"; }, configurable: true });
     Object.defineProperty(scope, 'heal', { get: function() { Groups.build.each(function(b) { if (b.team == Vars.player.team()) b.health = b.maxHealth; }); return "Постройки исцелены"; }, configurable: true });
     Object.defineProperty(scope, 'off', { get: function() { states.god = false; states.shield = false; Vars.state.rules.infiniteResources = false; Vars.state.rules.editor = false; Vars.state.rules.buildSpeedMultiplier = 1; if(Vars.player.unit()) Vars.player.unit().shield = 0; return "Системы сброшены"; }, configurable: true });
 
@@ -73,4 +74,3 @@
         return "Ошибка: юнит не найден.";
     };
 })();
-            
