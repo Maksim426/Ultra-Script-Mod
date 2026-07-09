@@ -4,7 +4,7 @@
     
     var printHelp = function() {
         Log.info("\n=== ULTRASCRIPT V21.0 ===");
-        Log.info("creative : Ресурсы");
+        Log.info("creative : Ресурсы + Все исследования");
         Log.info("editor : Редактор");
         Log.info("god : Бессмертие");
         Log.info("instant : Мгновенная стройка");
@@ -31,7 +31,27 @@
 
     Object.defineProperty(scope, 'help', { get: function() { printHelp(); return ""; }, configurable: true });
 
-    Object.defineProperty(scope, 'creative', { get: function() { Vars.state.rules.infiniteResources = !Vars.state.rules.infiniteResources; return "Creative: " + (Vars.state.rules.infiniteResources ? "ON" : "OFF"); }, configurable: true });
+    // Улучшенная команда creative с авто-исследованиями
+    Object.defineProperty(scope, 'creative', { get: function() { 
+        Vars.state.rules.infiniteResources = !Vars.state.rules.infiniteResources; 
+        
+        if (Vars.state.rules.infiniteResources) {
+            // Открываем все исследования для текущей игры
+            Vars.content.each(function(c) {
+                if (c instanceof Packages.mindustry.type.UnlockableContent) {
+                    c.quietUnlock();
+                }
+            });
+            return "Creative: ON (Все технологии исследованы)";
+        } else {
+            // Возвращаем исследования к обычному состоянию кампании
+            if (Vars.state.isCampaign()) {
+                Vars.universe.clearResearch();
+            }
+            return "Creative: OFF (Исследования возвращены в норму)";
+        }
+    }, configurable: true });
+
     Object.defineProperty(scope, 'editor', { get: function() { Vars.state.rules.editor = !Vars.state.rules.editor; return "Editor: " + (Vars.state.rules.editor ? "ON" : "OFF"); }, configurable: true });
     
     Object.defineProperty(scope, 'god', { get: function() { 
@@ -50,7 +70,6 @@
     
     Object.defineProperty(scope, 'instant', { get: function() { Vars.state.rules.buildSpeedMultiplier = (Vars.state.rules.buildSpeedMultiplier == 1 ? 9999 : 1); return "Instant Build: " + (Vars.state.rules.buildSpeedMultiplier > 1 ? "ON" : "OFF"); }, configurable: true });
     
-    // Новая команда для автоматического захвата текущего сектора кампании
     Object.defineProperty(scope, 'win', { get: function() { 
         if (Vars.state.isCampaign() && Vars.state.rules.sector) {
             Vars.state.rules.sector.win();
@@ -112,6 +131,7 @@
         Vars.state.rules.editor = false; 
         Vars.state.rules.buildSpeedMultiplier = 1; 
         if(Vars.player.unit()) Vars.player.unit().shield = 0; 
+        if (Vars.state.isCampaign()) Vars.universe.clearResearch();
         return "Системы сброшены"; 
     }, configurable: true });
 
@@ -126,3 +146,4 @@
         return "Ошибка: юнит не найден.";
     };
 })();
+                                    
