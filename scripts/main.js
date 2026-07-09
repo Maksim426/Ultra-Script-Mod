@@ -3,7 +3,7 @@
     var states = { god: false, shield: false };
     
     var printHelp = function() {
-        Log.info("\n[blue]=== ULTRASCRIPT V27.3 - АКТИВИРОВАН ===");
+        Log.info("\n[blue]=== ULTRASCRIPT V27.4 - АКТИВИРОВАН ===");
         Log.info("[blue]creative[/blue]     : Ресурсы (песочница)");
         Log.info("[blue]editor[/blue]       : Режим редактора");
         Log.info("[blue]god[/blue]          : Бессмертие");
@@ -14,14 +14,14 @@
         Log.info("[blue]fill[/blue]         : Заполнить ядро");
         Log.info("[blue]dump[/blue]         : Очистить ядро");
         Log.info("[blue]heal[/blue]         : Исцелить постройки");
-        Log.info("[blue]spawn[/blue]        : Спавн юнитов");
+        Log.info("[blue]spawn[/blue]        : Инструкция по спавну");
         Log.info("[blue]off[/blue]          : Сброс настроек");
         Log.info("[white]Используй [blue]help[/blue] для повторного вывода меню.[/white]");
     };
 
-    Events.on(EventType.worldLoad, printHelp);
+    Events.on("worldLoad", printHelp);
 
-    Events.on(EventType.update, function() {
+    Events.on("update", function() {
         var u = Vars.player.unit();
         if (u) {
             if (states.god) u.health = u.maxHealth;
@@ -81,3 +81,4 @@
         return "[red]Ошибка: Юнит не найден.";
     };
 })();
+                
