@@ -1,7 +1,7 @@
 (function() {
     var scope = (typeof vars !== 'undefined') ? this : (function() { return this; })();
     var states = { god: false };
-    var savedResearch = []; // Память для сохранения честного прогресса
+    var savedResearch = [];
     
     var printHelp = function() {
         Log.info("\n=== ULTRASCRIPT V21.0 ===");
@@ -32,21 +32,16 @@
 
     Object.defineProperty(scope, 'help', { get: function() { printHelp(); return ""; }, configurable: true });
 
-    // Полностью переписанная и исправленная команда creative
     Object.defineProperty(scope, 'creative', { get: function() { 
         Vars.state.rules.infiniteResources = !Vars.state.rules.infiniteResources; 
         
         if (Vars.state.rules.infiniteResources) {
-            savedResearch = []; // Очищаем старый бэкап перед созданием нового
-            
-            // Проходим по всему дереву исследований и открываем абсолютно всё, ломая замки
+            savedResearch = [];
             Vars.content.each(function(c) {
                 if (c instanceof Packages.mindustry.type.UnlockableContent) {
-                    // Если узел уже был исследован игроком, запоминаем это
                     if (c.unlocked()) {
                         savedResearch.push(c);
                     }
-                    // Принудительно взламываем статус блокировки
                     c.unlock();
                     if (c.techNode) {
                         c.techNode.unlocked = true;
@@ -55,24 +50,16 @@
             });
             return "Creative: ON (Абсолютно все исследования разблокированы!)";
         } else {
-            // Возврат к обычному состоянию
             Vars.content.each(function(c) {
                 if (c instanceof Packages.mindustry.type.UnlockableContent) {
-                    // Блокируем всё назад
                     if (c.techNode) {
                         c.techNode.unlocked = false;
-                    }
-                    // Оставляем открытым только то, что было в сохраненном массиве честного прогресса
-                    if (savedResearch.indexOf(c) === -1) {
-                        // Метод ядра игры для принудительной блокировки элемента
-                        // Если вызов не поддерживается напрямую, сбрасываем стандартным методом
                     }
                 }
             });
             
             if (Vars.state.isCampaign()) {
                 Vars.universe.clearResearch();
-                // Восстанавливаем из бэкапа
                 for (var i = 0; i < savedResearch.length; i++) {
                     savedResearch[i].unlock();
                 }
@@ -99,16 +86,31 @@
     
     Object.defineProperty(scope, 'instant', { get: function() { Vars.state.rules.buildSpeedMultiplier = (Vars.state.rules.buildSpeedMultiplier == 1 ? 9999 : 1); return "Instant Build: " + (Vars.state.rules.buildSpeedMultiplier > 1 ? "ON" : "OFF"); }, configurable: true });
     
+    // Исправленный и стабильный захват сектора для версии 159.2
     Object.defineProperty(scope, 'win', { get: function() { 
         if (Vars.state.isCampaign() && Vars.state.rules.sector) {
-            Vars.state.rules.sector.win();
-            return "Сектор успешно захвачен!";
+            var sector = Vars.state.rules.sector;
+            
+            // Заставляем игру думать, что все вражеские базы уничтожены, и вызываем триггер победы
+            sector.createBase(); 
+            Vars.state.gameOver = true;
+            sector.unlocked = true;
+            
+            // Если на карте есть вражеские ядра — уничтожаем их, чтобы сработал стандартный финал карты
+            Groups.build.each(function(b) {
+                if (b.team != Vars.player.team() && b instanceof Packages.mindustry.world.blocks.storage.CoreBlock.CoreBuild) {
+                    b.kill();
+                }
+            });
+            
+            return "Сектор переведен в состояние победы! Уничтожьте оставшихся врагов или подождите секунду.";
         }
         return "Ошибка: Вы должны находиться в режиме Кампании!";
     }, configurable: true });
 
     Object.defineProperty(scope, 'kill', { get: function() { Groups.unit.each(function(u) { if (u.team != Vars.player.team()) u.kill(); }); return "Враги уничтожены"; }, configurable: true });
     
+    // Исправлено: строго маленькая буква fill
     Object.defineProperty(scope, 'fill', { get: function() { 
         var unit = Vars.player.unit();
         if(unit && unit.core()) {
@@ -180,4 +182,4 @@
         return "Ошибка: юнит не найден.";
     };
 })();
-    
+                    
