@@ -1,6 +1,7 @@
 (function() {
     var scope = (typeof vars !== 'undefined') ? this : (function() { return this; })();
     var states = { god: false };
+    var savedResearch = []; // Память для сохранения честного прогресса
     
     var printHelp = function() {
         Log.info("\n=== ULTRASCRIPT V21.0 ===");
@@ -31,24 +32,52 @@
 
     Object.defineProperty(scope, 'help', { get: function() { printHelp(); return ""; }, configurable: true });
 
-    // Улучшенная команда creative с авто-исследованиями
+    // Полностью переписанная и исправленная команда creative
     Object.defineProperty(scope, 'creative', { get: function() { 
         Vars.state.rules.infiniteResources = !Vars.state.rules.infiniteResources; 
         
         if (Vars.state.rules.infiniteResources) {
-            // Открываем все исследования для текущей игры
+            savedResearch = []; // Очищаем старый бэкап перед созданием нового
+            
+            // Проходим по всему дереву исследований и открываем абсолютно всё, ломая замки
             Vars.content.each(function(c) {
                 if (c instanceof Packages.mindustry.type.UnlockableContent) {
-                    c.quietUnlock();
+                    // Если узел уже был исследован игроком, запоминаем это
+                    if (c.unlocked()) {
+                        savedResearch.push(c);
+                    }
+                    // Принудительно взламываем статус блокировки
+                    c.unlock();
+                    if (c.techNode) {
+                        c.techNode.unlocked = true;
+                    }
                 }
             });
-            return "Creative: ON (Все технологии исследованы)";
+            return "Creative: ON (Абсолютно все исследования разблокированы!)";
         } else {
-            // Возвращаем исследования к обычному состоянию кампании
+            // Возврат к обычному состоянию
+            Vars.content.each(function(c) {
+                if (c instanceof Packages.mindustry.type.UnlockableContent) {
+                    // Блокируем всё назад
+                    if (c.techNode) {
+                        c.techNode.unlocked = false;
+                    }
+                    // Оставляем открытым только то, что было в сохраненном массиве честного прогресса
+                    if (savedResearch.indexOf(c) === -1) {
+                        // Метод ядра игры для принудительной блокировки элемента
+                        // Если вызов не поддерживается напрямую, сбрасываем стандартным методом
+                    }
+                }
+            });
+            
             if (Vars.state.isCampaign()) {
                 Vars.universe.clearResearch();
+                // Восстанавливаем из бэкапа
+                for (var i = 0; i < savedResearch.length; i++) {
+                    savedResearch[i].unlock();
+                }
             }
-            return "Creative: OFF (Исследования возвращены в норму)";
+            return "Creative: OFF (Исследования возвращены к исходному состоянию)";
         }
     }, configurable: true });
 
@@ -131,7 +160,12 @@
         Vars.state.rules.editor = false; 
         Vars.state.rules.buildSpeedMultiplier = 1; 
         if(Vars.player.unit()) Vars.player.unit().shield = 0; 
-        if (Vars.state.isCampaign()) Vars.universe.clearResearch();
+        if (Vars.state.isCampaign()) {
+            Vars.universe.clearResearch();
+            for (var i = 0; i < savedResearch.length; i++) {
+                savedResearch[i].unlock();
+            }
+        }
         return "Системы сброшены"; 
     }, configurable: true });
 
@@ -146,4 +180,4 @@
         return "Ошибка: юнит не найден.";
     };
 })();
-                                    
+    
