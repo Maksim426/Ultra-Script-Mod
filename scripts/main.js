@@ -1,69 +1,48 @@
-Events.on(ClientLoadEvent, function(event) {
-    // Безопасная функция создания меню
-    const openUltraScriptMenu = function() {
-        // Проверяем, не открыто ли уже окно, чтобы избежать краша
-        if (Vars.ui.hudGroup.find("ultraScriptDialog") != null) return;
+Events.on(ClientLoadEvent, function(e) {
+    const scope = Vars.mods.getScripts().scope;
 
-        const dialog = new BaseDialog("UltraScript Control Panel");
-        dialog.name = "ultraScriptDialog";
-        
-        dialog.cont.pane(function(table) {
-            table.margin(20);
-            
-            const refreshMenu = function() {
-                table.clear();
-                
-                const addToggle = function(label, stateKey, actionCallback) {
-                    table.add(label).padRight(50).left();
-                    table.button(function() {
-                        return (GameStates[stateKey] ? "[#00ff00]ENABLED" : "[#ff0000]DISABLED");
-                    }, function() {
-                        GameStates[stateKey] = !GameStates[stateKey];
-                        actionCallback(GameStates[stateKey]);
-                        refreshMenu();
-                    }).size(160, 50).right().row();
-                };
-
-                table.add("[#ffff00]--- PLAYER ---").pad(10).colspan(2).row();
-                addToggle("God Mode", "godMode", function(en) { 
-                    let u = Vars.player.unit(); 
-                    if(u) u.health = en ? 999999 : u.maxHealth; 
-                });
-                addToggle("Flight", "flightMode", function(en) { 
-                    let u = Vars.player.unit(); 
-                    if(u) { u.type.flying = en; u.type.canOverdrive = en; } 
-                });
-
-                table.add("[#ffff00]--- WORLD ---").pad(10).colspan(2).row();
-                addToggle("Resources", "infiniteResources", function(en) { Vars.state.rules.infiniteResources = en; });
-                addToggle("Fast Build", "fastBuild", function(en) { Vars.state.rules.buildSpeedMultiplier = en ? 9999 : 1; });
-
-                table.button("Heal & Refill", function() {
-                    Groups.build.each(function(b) { if(b.team == Vars.player.team()) { b.health = b.maxHealth; if(b.ammo != null) b.ammo = 999; }});
-                }).size(320, 50).padTop(10).row();
-            };
-
-            refreshMenu();
-        }).row();
-
-        dialog.addCloseButton();
-        dialog.show();
+    const states = {
+        god: false, fly: false, shield: false, creative: false, editor: false, instant: false
     };
 
-    // Создаем кнопку в более стабильном контейнере
-    const hudTable = new Table();
-    hudTable.bottom().left().pad(10); // Переместил в нижний левый угол для стабильности
-    hudTable.button("US", function() {
-        openUltraScriptMenu();
-    }).size(50, 50);
-    
-    Vars.ui.hudGroup.addChild(hudTable);
-});
+    const cmdList = {
+        god: { desc: "Бессмертие юнита", act: function() { const u = Vars.player.unit(); if(!u) return "Ошибка: нет юнита"; states.god = !states.god; u.health = states.god ? 999999 : u.maxHealth; return "God Mode: " + (states.god ? "ВКЛ" : "ВЫКЛ"); }},
+        fly: { desc: "Полет юнита", act: function() { const u = Vars.player.unit(); if(!u) return "Ошибка: нет юнита"; states.fly = !states.fly; u.type.flying = states.fly; return "Fly: " + (states.fly ? "ВКЛ" : "ВЫКЛ"); }},
+        shield: { desc: "Личный щит", act: function() { const u = Vars.player.unit(); if(!u) return "Ошибка: нет юнита"; states.shield = !states.shield; u.shield = states.shield ? 9999 : 0; return "Shield: " + (states.shield ? "ВКЛ" : "ВЫКЛ"); }},
+        heal: { desc: "Починить все здания", act: function() { Groups.build.each(b => { if(b.team == Vars.player.team()) b.health = b.maxHealth; }); return "Здания починены"; }},
+        unwreck: { desc: "Восстановить разрушенные блоки", act: function() { Groups.build.each(b => { if(b.team == Vars.player.team()) b.heal(); }); return "Восстановление запущено"; }},
+        ammo: { desc: "Зарядить все турели", act: function() { Groups.build.each(b => { if(b.team == Vars.player.team() && b.ammo != null) b.ammo = 999; }); return "Турели заряжены"; }},
+        fill: { desc: "Наполнить ядро", act: function() { const c = Vars.player.unit()?.core(); if(!c) return "Ошибка: нет ядра"; Vars.content.items().each(i => c.items.set(i, c.storageCapacity)); return "Ядро наполнено"; }},
+        speed: { desc: "Скорость юнита x5", act: function() { const u = Vars.player.unit(); if(!u) return "Ошибка: нет юнита"; u.speedMultiplier = 5; return "Скорость x5"; }},
+        creative: { desc: "Бесконечные ресурсы", act: function() { states.creative = !states.creative; Vars.state.rules.infiniteResources = states.creative; return "Creative: " + (states.creative ? "ВКЛ" : "ВЫКЛ"); }},
+        editor: { desc: "Режим редактора", act: function() { states.editor = !states.editor; Vars.state.rules.editor = states.editor; return "Editor: " + (states.editor ? "ВКЛ" : "ВЫКЛ"); }},
+        instant: { desc: "Мгновенная постройка", act: function() { states.instant = !states.instant; Vars.state.rules.buildSpeedMultiplier = states.instant ? 9999 : 1; return "Instant Build: " + (states.instant ? "ВКЛ" : "ВЫКЛ"); }},
+        wave: { desc: "Пропустить волну", act: function() { Vars.logic.skipWave(); return "Волна пропущена"; }},
+        kill: { desc: "Убить врагов", act: function() { Groups.unit.each(u => { if(u.team != Vars.player.team()) u.kill(); }); return "Враги уничтожены"; }},
+        wreck: { desc: "Удалить вражеские здания", act: function() { Groups.build.each(b => { if(b.team != Vars.player.team()) b.kill(); }); return "Здания удалены"; }},
+        neutral: { desc: "Нейтрализовать врагов", act: function() { Groups.unit.each(u => { if(u.team != Vars.player.team()) u.team = Team.derelict; }); return "Враги нейтральны"; }},
+        dump: { desc: "Очистить ядро", act: function() { const c = Vars.player.unit()?.core(); if(!c) return "Ошибка: нет ядра"; c.items.clear(); return "Ядро очищено"; }},
+        spawn: { desc: "Создать 5 юнитов", act: function() { const u = Vars.player.unit(); if(!u) return "Ошибка: нет юнита"; for(let i=0; i<5; i++) u.type.spawn(Vars.player.team(), u.x, u.y); return "Юниты созданы"; }},
+        win: { desc: "Победа", act: function() { Events.fire(new SectorCaptureEvent(Vars.state.rules.sector)); return "Победа!"; }},
+        lose: { desc: "Сброс сектора", act: function() { Vars.logic.reset(); return "Сектор сброшен"; }},
+        research: { desc: "Открыть технологии", act: function() { Vars.content.each(c => { if(c.unlock != null) c.unlock(); }); return "Технологии открыты"; }},
+        reset: { desc: "Сброс всех читов", act: function() { for(let k in states) states[k] = false; Vars.state.rules.infiniteResources = false; Vars.state.rules.buildSpeedMultiplier = 1; Vars.state.rules.editor = false; return "Все читы сброшены"; }}
+    };
 
-// Глобальный объект состояний должен быть доступен
-const GameStates = {
-    godMode: false,
-    flightMode: false,
-    infiniteResources: false,
-    fastBuild: false
-};
+    for (let name in cmdList) {
+        (function(n) {
+            Object.defineProperty(scope, n, { get: function() {
+                let res = cmdList[n].act();
+                Log.info("[#00ff00]>> " + res + "[]");
+                return "";
+            }});
+        })(name);
+    }
+
+    Object.defineProperty(scope, "help", { get: function() {
+        Log.info("\n[#00ffff]=== UltraScript List ===[]");
+        for (let name in cmdList) Log.info("[#ffff00]" + name + "[] — " + cmdList[name].desc);
+        return "";
+    }});
+});
+            
