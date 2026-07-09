@@ -12,6 +12,7 @@
         Log.info("win : Завершить волну");
         Log.info("kill : Убить врагов");
         Log.info("fill : Заполнить ядро");
+        Log.info("ammo : Заполнить все турели патронами");
         Log.info("dump : Очистить ядро");
         Log.info("heal : Исцелить постройки");
         Log.info("spawn : Спавн юнита");
@@ -49,7 +50,6 @@
     
     Object.defineProperty(scope, 'kill', { get: function() { Groups.unit.each(function(u) { if (u.team != Vars.player.team()) u.kill(); }); return "Враги уничтожены"; }, configurable: true });
     
-    // Исправлено: теперь команда пишется с маленькой буквы
     Object.defineProperty(scope, 'fill', { get: function() { 
         var unit = Vars.player.unit();
         if(unit && unit.core()) {
@@ -57,6 +57,41 @@
             return "Ядро заполнено!"; 
         }
         return "Нет ядра"; 
+    }, configurable: true });
+
+    // Улучшенная команда ammo с поддержкой электричества, жидкостей и предметов
+    Object.defineProperty(scope, 'ammo', { get: function() { 
+        var count = 0;
+        Groups.build.each(function(b) { 
+            if (b.team == Vars.player.team() && b instanceof Packages.mindustry.world.blocks.defense.turrets.Turret.TurretBuild) {
+                var block = b.block;
+                
+                // 1. Заполняем энергию, если турель электрическая
+                if (b.cons && b.cons.power) {
+                    b.power.graph.getPowerBalance(); // Обновляем сеть
+                    b.power.status = 1; // Ставим статус "Запитано"
+                }
+
+                // 2. Заполняем предметы (патроны), если они есть у турели
+                if (block.ammoTypes) {
+                    Vars.content.items().each(function(i) {
+                        if (block.ammoTypes.containsKey(i)) {
+                            b.items.set(i, block.itemCapacity);
+                        }
+                    });
+                }
+
+                // 3. Заполняем жидкости, если турель работает на жидкостях
+                if (b.liquids) {
+                    Vars.content.liquids().each(function(l) {
+                        b.liquids.set(l, b.block.liquidCapacity);
+                    });
+                }
+                
+                count++;
+            }
+        });
+        return "Все турели заряжены! Всего: " + count; 
     }, configurable: true });
 
     Object.defineProperty(scope, 'dump', { get: function() { var c = Vars.player.unit() ? Vars.player.unit().core() : null; if(c) { c.items.clear(); return "Ядро очищено"; } return "Нет ядра"; }, configurable: true });
