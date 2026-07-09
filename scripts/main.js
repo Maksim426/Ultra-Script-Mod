@@ -11,7 +11,7 @@
         Log.info("shield : Бесконечный щит");
         Log.info("win : Завершить волну");
         Log.info("kill : Убить врагов");
-        Log.info("Fill : Заполнить ядро");
+        Log.info("fill : Заполнить ядро");
         Log.info("dump : Очистить ядро");
         Log.info("heal : Исцелить постройки");
         Log.info("spawn : Спавн юнита");
