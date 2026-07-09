@@ -1,54 +1,57 @@
 Events.on(ClientLoadEvent, function(e) {
-    var scope = Vars.mods.getScripts().scope;
-    var states = {};
-
-    var toggle = function(name, actionOn, actionOff) {
-        states[name] = !states[name];
-        states[name] ? actionOn() : actionOff();
-        Log.info(">>> " + name + " : " + (states[name] ? "ВКЛ" : "ВЫКЛ"));
+    Vars.mods.getScripts().scope.c = {
+        help: function() {
+            Log.info("\n=== СПРАВКА ПО КОМАНДАМ ===");
+            Log.info("c.creative    : Ресурсы и песочница");
+            Log.info("c.editor      : Режим редактора");
+            Log.info("c.god         : Бессмертие");
+            Log.info("c.instant     : Мгновенная стройка");
+            Log.info("c.fly         : Полет");
+            Log.info("c.shield      : Бесконечный щит");
+            Log.info("c.win         : Победить в волне");
+            Log.info("c.kill        : Убить всех врагов");
+            Log.info("c.fill        : Заполнить ядро");
+            Log.info("c.heal        : Исцелить постройки");
+            Log.info("c.spawn       : Создать 5 юнитов");
+            Log.info("c.dump        : Очистить ядро");
+            Log.info("c.off         : Отключить всё");
+            Log.info("===========================");
+            return "";
+        },
+        states: {},
+        toggle: function(name, on, off) {
+            this.states[name] = !this.states[name];
+            this.states[name] ? on() : off();
+            Log.info(">>> " + name + " : " + (this.states[name] ? "ВКЛ" : "ВЫКЛ"));
+        }
     };
 
-    scope.help = function() {
-        Log.info("\n--- СПРАВКА ---");
-        Log.info("creative:       Ресурсы и песочница");
-        Log.info("editor:         Режим редактора");
-        Log.info("god:            Бессмертие");
-        Log.info("instantbuild:   Мгновенная стройка");
-        Log.info("fly:            Полет");
-        Log.info("shield:         Бесконечный щит");
-        Log.info("win:            Победа в волне");
-        Log.info("kill:           Убить врагов");
-        Log.info("fill:           Заполнить ядро");
-        Log.info("heal:           Исцеление построек");
-        Log.info("spawn:          Создать 5 юнитов");
-        Log.info("dump:           Очистить ядро");
-        Log.info("off:            Сброс настроек");
-    };
+    var c = Vars.mods.getScripts().scope.c;
 
-    scope.creative = function() { toggle('creative', function() { Vars.state.rules.infiniteResources = true; Vars.state.rules.modeName = "sandbox"; }, function() { Vars.state.rules.infiniteResources = false; Vars.state.rules.modeName = "survival"; }); };
-    scope.editor = function() { toggle('editor', function() { Vars.state.rules.editor = true; }, function() { Vars.state.rules.editor = false; }); };
-    scope.instantbuild = function() { toggle('instantbuild', function() { Vars.state.rules.buildSpeedMultiplier = 9999; }, function() { Vars.state.rules.buildSpeedMultiplier = 1; }); };
-    scope.god = function() { toggle('god', function() { Vars.player.unit().health = 999999; }, function() { Vars.player.unit().health = 100; }); };
-    scope.fly = function() { toggle('fly', function() { Vars.player.unit().type.flying = true; }, function() { Vars.player.unit().type.flying = false; }); };
-    scope.shield = function() { toggle('shield', function() { Vars.player.unit().shield = 9999; }, function() { Vars.player.unit().shield = 0; }); };
+    Object.defineProperty(c, 'creative', { get: function() { c.toggle('creative', function() { Vars.state.rules.infiniteResources = true; Vars.state.rules.modeName = "sandbox"; }, function() { Vars.state.rules.infiniteResources = false; Vars.state.rules.modeName = "survival"; }); } });
+    Object.defineProperty(c, 'editor',   { get: function() { c.toggle('editor', function() { Vars.state.rules.editor = true; }, function() { Vars.state.rules.editor = false; }); } });
+    Object.defineProperty(c, 'instant',  { get: function() { c.toggle('instant', function() { Vars.state.rules.buildSpeedMultiplier = 9999; }, function() { Vars.state.rules.buildSpeedMultiplier = 1; }); } });
+    Object.defineProperty(c, 'god',      { get: function() { c.toggle('god', function() { Vars.player.unit().health = 999999; }, function() { Vars.player.unit().health = 100; }); } });
+    Object.defineProperty(c, 'fly',      { get: function() { c.toggle('fly', function() { Vars.player.unit().type.flying = true; }, function() { Vars.player.unit().type.flying = false; }); } });
+    Object.defineProperty(c, 'shield',   { get: function() { c.toggle('shield', function() { Vars.player.unit().shield = 9999; }, function() { Vars.player.unit().shield = 0; }); } });
     
-    scope.win = function() { Vars.logic.skipWave(); return ">>> Победа"; };
-    scope.kill = function() { Groups.unit.each(function(u) { if (u.team != Vars.player.team()) u.kill(); }); return ">>> Враги уничтожены"; };
-    scope.fill = function() { var c = Vars.player.unit().core(); if(c) { Vars.content.items().each(function(i) { c.items.set(i, c.storageCapacity); }); return ">>> Ядро заполнено"; } return ">>> Нет ядра"; };
-    scope.heal = function() { Groups.build.each(function(b) { if (b.team == Vars.player.team()) b.health = b.maxHealth; }); return ">>> Исцелено"; };
-    scope.spawn = function() { for(var i=0; i<5; i++) { var u = Vars.player.unit().type.create(Vars.player.team()); u.set(Vars.player.x, Vars.player.y); u.add(); } return ">>> Юниты созданы"; };
-    scope.dump = function() { var c = Vars.player.unit().core(); if(c) { c.items.clear(); return ">>> Ядро очищено"; } return ">>> Нет ядра"; };
+    Object.defineProperty(c, 'win',   { get: function() { Vars.logic.skipWave(); return ">>> Вперед на одну волну"; } });
+    Object.defineProperty(c, 'kill',  { get: function() { Groups.unit.each(function(u) { if (u.team != Vars.player.team()) u.kill(); }); return ">>> Враги уничтожены"; } });
+    Object.defineProperty(c, 'fill',  { get: function() { var core = Vars.player.unit().core(); if(core) { Vars.content.items().each(function(i) { core.items.set(i, core.storageCapacity); }); return ">>> Ядро заполнено"; } return ">>> Нет ядра"; } });
+    Object.defineProperty(c, 'heal',  { get: function() { Groups.build.each(function(b) { if (b.team == Vars.player.team()) b.health = b.maxHealth; }); return ">>> Все постройки исцелены"; } });
+    Object.defineProperty(c, 'spawn', { get: function() { for(var i=0; i<5; i++) { var u = Vars.player.unit().type.create(Vars.player.team()); u.set(Vars.player.x, Vars.player.y); u.add(); } return ">>> 5 юнитов создано"; } });
+    Object.defineProperty(c, 'dump',  { get: function() { var core = Vars.player.unit().core(); if(core) { core.items.clear(); return ">>> Ядро полностью очищено"; } return ">>> Нет ядра"; } });
     
-    scope.off = function() {
-        for(var key in states) { states[key] = false; }
+    Object.defineProperty(c, 'off', { get: function() {
+        for(var key in c.states) { c.states[key] = false; }
         Vars.state.rules.infiniteResources = false;
         Vars.state.rules.editor = false;
         Vars.state.rules.modeName = "survival";
         Vars.state.rules.buildSpeedMultiplier = 1;
         if(Vars.player.unit()) { Vars.player.unit().shield = 0; Vars.player.unit().type.flying = false; Vars.player.unit().health = 100; }
-        Log.info(">>> СИСТЕМЫ СБРОШЕНЫ");
-    };
-    
-    Log.info("ULTRASCRIPT MOD ЗАГРУЖЕН. Введите help()");
+        return ">>> ВСЕ СИСТЕМЫ СБРОШЕНЫ";
+    } });
+
+    Log.info("\n[cyan]Ultra Script Mod успешно загружен![]");
+    c.help();
 });
-          
