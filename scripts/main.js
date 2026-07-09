@@ -8,7 +8,7 @@ Events.on(ClientLoadEvent, function(e) {
             Log.info("c.instant     : Мгновенная стройка");
             Log.info("c.fly         : Полет");
             Log.info("c.shield      : Бесконечный щит");
-            Log.info("c.win         : Победить в волне");
+            Log.info("c.win         : Мгновенная победа в секторе");
             Log.info("c.kill        : Убить всех врагов");
             Log.info("c.fill        : Заполнить ядро");
             Log.info("c.heal        : Исцелить постройки");
@@ -35,7 +35,7 @@ Events.on(ClientLoadEvent, function(e) {
     Object.defineProperty(c, 'fly',      { get: function() { c.toggle('fly', function() { Vars.player.unit().type.flying = true; }, function() { Vars.player.unit().type.flying = false; }); } });
     Object.defineProperty(c, 'shield',   { get: function() { c.toggle('shield', function() { Vars.player.unit().shield = 9999; }, function() { Vars.player.unit().shield = 0; }); } });
     
-    Object.defineProperty(c, 'win',   { get: function() { Vars.logic.skipWave(); return ">>> Вперед на одну волну"; } });
+    Object.defineProperty(c, 'win',   { get: function() { if(Vars.state.isCampaign()){ var sector = Vars.state.getSector(); if(sector != null) sector.createBase(); } Events.fire(new SectorCaptureEvent(Vars.state.getSector())); Vars.ui.hudfrag.showToast("Сектор Захвачен!"); return ">>> ПОБЕДА"; } });
     Object.defineProperty(c, 'kill',  { get: function() { Groups.unit.each(function(u) { if (u.team != Vars.player.team()) u.kill(); }); return ">>> Враги уничтожены"; } });
     Object.defineProperty(c, 'fill',  { get: function() { var core = Vars.player.unit().core(); if(core) { Vars.content.items().each(function(i) { core.items.set(i, core.storageCapacity); }); return ">>> Ядро заполнено"; } return ">>> Нет ядра"; } });
     Object.defineProperty(c, 'heal',  { get: function() { Groups.build.each(function(b) { if (b.team == Vars.player.team()) b.health = b.maxHealth; }); return ">>> Все постройки исцелены"; } });
