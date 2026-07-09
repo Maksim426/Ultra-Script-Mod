@@ -55,3 +55,4 @@ Events.on(ClientLoadEvent, function(e) {
     Log.info("\n[cyan]Ultra Script Mod успешно загружен![]");
     c.help();
 });
+
