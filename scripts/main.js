@@ -9,7 +9,7 @@
         Log.info("god : Бессмертие");
         Log.info("instant : Мгновенная стройка");
         Log.info("shield : Бесконечный щит");
-        Log.info("win : Завершить волну");
+        Log.info("skip : Завершить волну");
         Log.info("kill : Убить врагов");
         Log.info("fill : Заполнить ядро");
         Log.info("ammo : Заполнить все турели патронами");
@@ -43,7 +43,7 @@
         return "Shield: " + (states.shield ? "ON" : "OFF"); 
     }, configurable: true });
 
-    Object.defineProperty(scope, 'win', { get: function() { 
+    Object.defineProperty(scope, 'skip', { get: function() { 
         Groups.unit.each(function(u) { if (u.team != Vars.player.team()) u.kill(); });
         return "Волна завершена!"; 
     }, configurable: true });
@@ -59,39 +59,37 @@
         return "Нет ядра"; 
     }, configurable: true });
 
-    // Улучшенная команда ammo с поддержкой электричества, жидкостей и предметов
     Object.defineProperty(scope, 'ammo', { get: function() { 
         var count = 0;
         Groups.build.each(function(b) { 
             if (b.team == Vars.player.team() && b instanceof Packages.mindustry.world.blocks.defense.turrets.Turret.TurretBuild) {
                 var block = b.block;
                 
-                // 1. Заполняем энергию, если турель электрическая
-                if (b.cons && b.cons.power) {
-                    b.power.graph.getPowerBalance(); // Обновляем сеть
-                    b.power.status = 1; // Ставим статус "Запитано"
-                }
-
-                // 2. Заполняем предметы (патроны), если они есть у турели
                 if (block.ammoTypes) {
                     Vars.content.items().each(function(i) {
                         if (block.ammoTypes.containsKey(i)) {
+                            for (var c = 0; c < block.maxAmmo; c++) {
+                                b.handleItem(null, i);
+                            }
                             b.items.set(i, block.itemCapacity);
                         }
                     });
                 }
 
-                // 3. Заполняем жидкости, если турель работает на жидкостях
                 if (b.liquids) {
                     Vars.content.liquids().each(function(l) {
-                        b.liquids.set(l, b.block.liquidCapacity);
+                        b.liquids.set(l, block.liquidCapacity);
                     });
+                }
+
+                if (b.cons && b.cons.power) {
+                    b.power.status = 1;
                 }
                 
                 count++;
             }
         });
-        return "Все турели заряжены! Всего: " + count; 
+        return "Все турели полностью заряжены! Всего: " + count; 
     }, configurable: true });
 
     Object.defineProperty(scope, 'dump', { get: function() { var c = Vars.player.unit() ? Vars.player.unit().core() : null; if(c) { c.items.clear(); return "Ядро очищено"; } return "Нет ядра"; }, configurable: true });
