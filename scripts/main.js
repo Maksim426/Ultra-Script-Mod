@@ -8,6 +8,7 @@
         Log.info("editor : Редактор");
         Log.info("god : Бессмертие");
         Log.info("instant : Мгновенная стройка");
+        Log.info("win : Захватить сектор");
         Log.info("kill : Убить врагов");
         Log.info("fill : Заполнить ядро");
         Log.info("ammo : Заполнить все турели патронами");
@@ -20,12 +21,11 @@
 
     Events.on(EventType.WorldLoadEvent, printHelp);
 
-    // Постоянное поддержание здоровья и щита, пока включен Режим Бога
     Events.on(EventType.UnitControlEvent, function() {
         var u = Vars.player.unit();
         if (u && states.god) {
             u.health = u.maxHealth;
-            u.shield = 999999; // Даем огромный запас прочности щита внутри режима бога
+            u.shield = 999999;
         }
     });
 
@@ -34,7 +34,6 @@
     Object.defineProperty(scope, 'creative', { get: function() { Vars.state.rules.infiniteResources = !Vars.state.rules.infiniteResources; return "Creative: " + (Vars.state.rules.infiniteResources ? "ON" : "OFF"); }, configurable: true });
     Object.defineProperty(scope, 'editor', { get: function() { Vars.state.rules.editor = !Vars.state.rules.editor; return "Editor: " + (Vars.state.rules.editor ? "ON" : "OFF"); }, configurable: true });
     
-    // Обновленный Режим Бога: макс. здоровье + мощный щит в одной команде
     Object.defineProperty(scope, 'god', { get: function() { 
         states.god = !states.god; 
         var u = Vars.player.unit();
@@ -50,6 +49,16 @@
     }, configurable: true });
     
     Object.defineProperty(scope, 'instant', { get: function() { Vars.state.rules.buildSpeedMultiplier = (Vars.state.rules.buildSpeedMultiplier == 1 ? 9999 : 1); return "Instant Build: " + (Vars.state.rules.buildSpeedMultiplier > 1 ? "ON" : "OFF"); }, configurable: true });
+    
+    // Новая команда для автоматического захвата текущего сектора кампании
+    Object.defineProperty(scope, 'win', { get: function() { 
+        if (Vars.state.isCampaign() && Vars.state.rules.sector) {
+            Vars.state.rules.sector.win();
+            return "Сектор успешно захвачен!";
+        }
+        return "Ошибка: Вы должны находиться в режиме Кампании!";
+    }, configurable: true });
+
     Object.defineProperty(scope, 'kill', { get: function() { Groups.unit.each(function(u) { if (u.team != Vars.player.team()) u.kill(); }); return "Враги уничтожены"; }, configurable: true });
     
     Object.defineProperty(scope, 'fill', { get: function() { 
