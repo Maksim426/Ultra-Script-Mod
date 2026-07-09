@@ -3,7 +3,7 @@
   displayName: "Ultra Script Mod"
   author: "Maxim"
   description: "Набор консольных команд для управления игрой."
-  version: "1.0"
+  version: "21.0"
   minGameVersion: 146
 }
 
