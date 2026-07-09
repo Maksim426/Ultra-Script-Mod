@@ -9,7 +9,6 @@
         Log.info("god : Бессмертие");
         Log.info("instant : Мгновенная стройка");
         Log.info("shield : Бесконечный щит");
-        Log.info("skip : Завершить волну");
         Log.info("kill : Убить врагов");
         Log.info("fill : Заполнить ядро");
         Log.info("ammo : Заполнить все турели патронами");
@@ -41,11 +40,6 @@
         states.shield = !states.shield; 
         if(states.shield && Vars.player.unit()) Vars.player.unit().shield = 9999;
         return "Shield: " + (states.shield ? "ON" : "OFF"); 
-    }, configurable: true });
-
-    Object.defineProperty(scope, 'skip', { get: function() { 
-        Groups.unit.each(function(u) { if (u.team != Vars.player.team()) u.kill(); });
-        return "Волна завершена!"; 
     }, configurable: true });
     
     Object.defineProperty(scope, 'kill', { get: function() { Groups.unit.each(function(u) { if (u.team != Vars.player.team()) u.kill(); }); return "Враги уничтожены"; }, configurable: true });
