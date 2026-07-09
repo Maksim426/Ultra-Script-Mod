@@ -86,30 +86,30 @@
     
     Object.defineProperty(scope, 'instant', { get: function() { Vars.state.rules.buildSpeedMultiplier = (Vars.state.rules.buildSpeedMultiplier == 1 ? 9999 : 1); return "Instant Build: " + (Vars.state.rules.buildSpeedMultiplier > 1 ? "ON" : "OFF"); }, configurable: true });
     
-    // Абсолютно надежный захват сектора для v159.2
+    // Абсолютно надежный захват любого сектора без вызова проблемных Java-классов
     Object.defineProperty(scope, 'win', { get: function() { 
-        if (Vars.state.isCampaign() && Vars.state.rules.sector) {
-            var sector = Vars.state.rules.sector;
+        if (Vars.state.isCampaign()) {
+            // 1. Активируем глобальный флаг победы в правилах текущего матча
+            Vars.state.rules.victory = true;
             
-            // 1. Напрямую ставим сектору статус "захвачен" в кампании
-            sector.captured = true;
-            
-            // 2. Уничтожаем все вражеские ядра на текущей карте для активации стандартного триггера победы
+            // 2. Уничтожаем абсолютно все постройки врага (включая ядра и турели)
             Groups.build.each(function(b) {
-                if (b.team != Vars.player.team() && b instanceof Packages.mindustry.world.blocks.storage.CoreBlock.CoreBuild) {
+                if (b.team != Vars.player.team()) {
                     b.kill();
                 }
             });
             
-            // 3. Убиваем всех врагов на карте
+            // 3. Уничтожаем всех вражеских юнитов на карте
             Groups.unit.each(function(u) {
-                if (u.team != Vars.player.team()) u.kill();
+                if (u.team != Vars.player.team()) {
+                    u.kill();
+                }
             });
             
-            // 4. Сохраняем сектор, чтобы прогресс записался на карту кампании
-            sector.save();
+            // 4. Принудительно вызываем завершение игровой сессии с победой
+            Events.fire(new EventType.GameOverEvent(Vars.player.team()));
             
-            return "Сектор захвачен! Все вражеские ядра уничтожены.";
+            return "Сектор успешно захвачен! Запущен экран победы.";
         }
         return "Ошибка: Вы должны находиться в режиме Кампании!";
     }, configurable: true });
@@ -188,4 +188,4 @@
     };
 })();
 
-                                                                                           
+                                                    
