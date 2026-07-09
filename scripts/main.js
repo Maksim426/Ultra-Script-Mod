@@ -1,20 +1,11 @@
-// UltraScript.js — Полноценный скрипт для управления игровым процессом Mindustry
 Events.on(ClientLoadEvent, function(event) {
-    const scope = Vars.mods.getScripts().scope;
+    // Безопасная функция создания меню
+    const openUltraScriptMenu = function() {
+        // Проверяем, не открыто ли уже окно, чтобы избежать краша
+        if (Vars.ui.hudGroup.find("ultraScriptDialog") != null) return;
 
-    // Хранилище состояний для всех чит-функций
-    const GameStates = {
-        godMode: false,
-        flightMode: false,
-        personalShield: false,
-        infiniteResources: false,
-        editorMode: false,
-        fastBuild: false
-    };
-
-    // Функция отрисовки основного диалогового окна
-    const createUltraScriptMenu = function() {
         const dialog = new BaseDialog("UltraScript Control Panel");
+        dialog.name = "ultraScriptDialog";
         
         dialog.cont.pane(function(table) {
             table.margin(20);
@@ -22,7 +13,6 @@ Events.on(ClientLoadEvent, function(event) {
             const refreshMenu = function() {
                 table.clear();
                 
-                // Функция для создания переключателя
                 const addToggle = function(label, stateKey, actionCallback) {
                     table.add(label).padRight(50).left();
                     table.button(function() {
@@ -34,64 +24,23 @@ Events.on(ClientLoadEvent, function(event) {
                     }).size(160, 50).right().row();
                 };
 
-                // Блок: Игрок
-                table.add("[#ffff00]--- PLAYER CONFIGURATION ---").pad(15).colspan(2).row();
-                addToggle("God Mode", "godMode", function(enabled) {
-                    const unit = Vars.player.unit();
-                    if (unit) unit.health = enabled ? 999999 : unit.maxHealth;
+                table.add("[#ffff00]--- PLAYER ---").pad(10).colspan(2).row();
+                addToggle("God Mode", "godMode", function(en) { 
+                    let u = Vars.player.unit(); 
+                    if(u) u.health = en ? 999999 : u.maxHealth; 
                 });
-                addToggle("Flight Mode", "flightMode", function(enabled) {
-                    const unit = Vars.player.unit();
-                    if (unit) {
-                        unit.type.flying = enabled;
-                        unit.type.canOverdrive = enabled;
-                    }
-                });
-                addToggle("Personal Shield", "personalShield", function(enabled) {
-                    const unit = Vars.player.unit();
-                    if (unit) unit.shield = enabled ? 9999 : 0;
+                addToggle("Flight", "flightMode", function(en) { 
+                    let u = Vars.player.unit(); 
+                    if(u) { u.type.flying = en; u.type.canOverdrive = en; } 
                 });
 
-                // Блок: Мир
-                table.add("[#ffff00]--- WORLD CONFIGURATION ---").pad(15).colspan(2).row();
-                addToggle("Infinite Resources", "infiniteResources", function(enabled) {
-                    Vars.state.rules.infiniteResources = enabled;
-                });
-                addToggle("Fast Building", "fastBuild", function(enabled) {
-                    Vars.state.rules.buildSpeedMultiplier = enabled ? 9999 : 1;
-                });
+                table.add("[#ffff00]--- WORLD ---").pad(10).colspan(2).row();
+                addToggle("Resources", "infiniteResources", function(en) { Vars.state.rules.infiniteResources = en; });
+                addToggle("Fast Build", "fastBuild", function(en) { Vars.state.rules.buildSpeedMultiplier = en ? 9999 : 1; });
 
-                // Блок: Действия
-                table.add("[#ffff00]--- INSTANT ACTIONS ---").pad(15).colspan(2).row();
-                table.button("Heal All Friendly Buildings", function() {
-                    Groups.build.each(function(building) {
-                        if (building.team === Vars.player.team()) building.health = building.maxHealth;
-                    });
-                }).size(320, 50).row();
-                
-                table.button("Fill Core With Resources", function() {
-                    const core = Vars.player.unit().core();
-                    if (core) {
-                        Vars.content.items().each(function(item) {
-                            core.items.set(item, core.storageCapacity);
-                        });
-                    }
-                }).size(320, 50).row();
-                
-                table.button("Kill All Hostile Units", function() {
-                    Groups.unit.each(function(unit) {
-                        if (unit.team !== Vars.player.team()) unit.kill();
-                    });
-                }).size(320, 50).row();
-
-                // Системный сброс
-                table.add("[#ffff00]--- SYSTEM ---").pad(15).colspan(2).row();
-                table.button("Reset All States", function() {
-                    for (let key in GameStates) GameStates[key] = false;
-                    Vars.state.rules.infiniteResources = false;
-                    Vars.state.rules.buildSpeedMultiplier = 1;
-                    refreshMenu();
-                }).size(320, 60).padTop(10).row();
+                table.button("Heal & Refill", function() {
+                    Groups.build.each(function(b) { if(b.team == Vars.player.team()) { b.health = b.maxHealth; if(b.ammo != null) b.ammo = 999; }});
+                }).size(320, 50).padTop(10).row();
             };
 
             refreshMenu();
@@ -101,13 +50,20 @@ Events.on(ClientLoadEvent, function(event) {
         dialog.show();
     };
 
-    // Кнопка вызова меню на основном экране
+    // Создаем кнопку в более стабильном контейнере
     const hudTable = new Table();
-    hudTable.setFillParent(true);
-    hudTable.top().right().margin(30);
-    hudTable.button("UltraScript", function() {
-        createUltraScriptMenu();
-    }).size(120, 60);
+    hudTable.bottom().left().pad(10); // Переместил в нижний левый угол для стабильности
+    hudTable.button("US", function() {
+        openUltraScriptMenu();
+    }).size(50, 50);
     
     Vars.ui.hudGroup.addChild(hudTable);
 });
+
+// Глобальный объект состояний должен быть доступен
+const GameStates = {
+    godMode: false,
+    flightMode: false,
+    infiniteResources: false,
+    fastBuild: false
+};
