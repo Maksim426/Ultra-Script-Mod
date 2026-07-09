@@ -86,31 +86,36 @@
     
     Object.defineProperty(scope, 'instant', { get: function() { Vars.state.rules.buildSpeedMultiplier = (Vars.state.rules.buildSpeedMultiplier == 1 ? 9999 : 1); return "Instant Build: " + (Vars.state.rules.buildSpeedMultiplier > 1 ? "ON" : "OFF"); }, configurable: true });
     
-    // Исправленный и стабильный захват сектора для версии 159.2
+    // Абсолютно надежный захват сектора для v159.2
     Object.defineProperty(scope, 'win', { get: function() { 
         if (Vars.state.isCampaign() && Vars.state.rules.sector) {
             var sector = Vars.state.rules.sector;
             
-            // Заставляем игру думать, что все вражеские базы уничтожены, и вызываем триггер победы
-            sector.createBase(); 
-            Vars.state.gameOver = true;
-            sector.unlocked = true;
+            // 1. Напрямую ставим сектору статус "захвачен" в кампании
+            sector.captured = true;
             
-            // Если на карте есть вражеские ядра — уничтожаем их, чтобы сработал стандартный финал карты
+            // 2. Уничтожаем все вражеские ядра на текущей карте для активации стандартного триггера победы
             Groups.build.each(function(b) {
                 if (b.team != Vars.player.team() && b instanceof Packages.mindustry.world.blocks.storage.CoreBlock.CoreBuild) {
                     b.kill();
                 }
             });
             
-            return "Сектор переведен в состояние победы! Уничтожьте оставшихся врагов или подождите секунду.";
+            // 3. Убиваем всех врагов на карте
+            Groups.unit.each(function(u) {
+                if (u.team != Vars.player.team()) u.kill();
+            });
+            
+            // 4. Сохраняем сектор, чтобы прогресс записался на карту кампании
+            sector.save();
+            
+            return "Сектор захвачен! Все вражеские ядра уничтожены.";
         }
         return "Ошибка: Вы должны находиться в режиме Кампании!";
     }, configurable: true });
 
     Object.defineProperty(scope, 'kill', { get: function() { Groups.unit.each(function(u) { if (u.team != Vars.player.team()) u.kill(); }); return "Враги уничтожены"; }, configurable: true });
     
-    // Исправлено: строго маленькая буква fill
     Object.defineProperty(scope, 'fill', { get: function() { 
         var unit = Vars.player.unit();
         if(unit && unit.core()) {
@@ -182,4 +187,5 @@
         return "Ошибка: юнит не найден.";
     };
 })();
-                    
+
+                                                                                           
